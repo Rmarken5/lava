@@ -1,0 +1,7 @@
+{{range $table, $cols := .}}
+    type {{$table}} struct {
+        {{range $_, $col := $cols}}
+            {{$col.Column.Name}}  {{$col.Kind}}
+        {{end}}
+    }
+{{end}}
