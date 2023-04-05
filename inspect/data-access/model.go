@@ -3,7 +3,6 @@ package data_access
 type (
 	Table struct {
 		Name    string
-		Alias   string
 		Columns []Column
 	}
 

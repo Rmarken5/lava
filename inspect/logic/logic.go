@@ -7,6 +7,7 @@ import (
 	"log"
 	"reflect"
 	"regexp"
+	"strings"
 	"text/template"
 )
 
@@ -43,7 +44,11 @@ var (
 	}
 )
 
-const tablesInQueryRegEx = `(?i)\b(?:FROM|JOIN)\s+(\w+)(?:\s+AS\s+\w+)?(?:\s*,\s*(?:\w+)(?:\s+AS\s+\w+)?)*`
+const (
+	tablesInQueryRegEx        = `(?im)(?:FROM|JOIN)\s+([^\s,;()]+)(?:\s+AS\s+([^\s,;()]+))?`
+	findAliasRegEx            = `(?im)\sAS|\s(\w+)`
+	findAliasedTableNameRegEx = `(?im)(\w+)\sAS\s`
+)
 
 type (
 	Logic interface {
@@ -70,9 +75,8 @@ func (l *LogicImpl) BuildStructsForQuery(query string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
-	columnDefMap := l.buildColumnDefMap(tableDefinitions)
-	structBytes, err := l.buildStructStringFromTemplate(columnDefMap)
+	l.buildColumnDefMap(tableDefinitions)
+	structBytes, err := l.buildStructStringFromTemplate(tableDefinitions)
 	if err != nil {
 		return "", err
 	}
@@ -81,53 +85,61 @@ func (l *LogicImpl) BuildStructsForQuery(query string) (string, error) {
 
 }
 
-func (l *LogicImpl) getAllTableDefinitionsFromQuery(query string) ([]data_access.Table, error) {
+func (l *LogicImpl) getAllTableDefinitionsFromQuery(query string) ([]TableDef, error) {
 	tableNames := l.getTablesFromQuery(query)
-	tableDefinitions := make([]data_access.Table, len(tableNames))
-	for i, name := range tableNames {
-		definition, err := l.dataAccess.InspectTable(name)
+	tableDefinitions := make([]TableDef, len(tableNames))
+	for i, table := range tableNames {
+		var tableName = table
+		alias := findAlias(table)
+		if alias != "" {
+			tableName = findAliasedTableName(table)
+		}
+		definition, err := l.dataAccess.InspectTable(tableName)
 		if err != nil {
-			l.logger.Printf("error in inspecting table: %s ", name)
+			l.logger.Printf("error in inspecting table: %s ", tableName)
 			return tableDefinitions, err
 		}
-		tableDefinitions[i] = definition
+		tableDefinitions[i] = TableDef{
+			Table:      definition,
+			Alias:      alias,
+			ColumnDefs: nil,
+		}
 	}
 
 	return tableDefinitions, nil
 }
 
 func (l *LogicImpl) getTablesFromQuery(query string) []string {
+	tables := make([]string, 0)
+
 	l.logger.Printf("getting tables from query: %s: ", query)
 
 	re := regexp.MustCompile(tablesInQueryRegEx)
 
-	matches := re.FindAllStringSubmatch(query, -1)
-	tables := make([]string, len(matches))
-	for i, table := range matches {
-		tables[i] = table[len(table)-1]
+	matches := re.FindAllString(query, -1)
+	for _, match := range matches {
+		tableNames := regexp.MustCompile(`\w+`).FindAllString(match, -1)
+		tables = append(tables, strings.Join(tableNames[1:], " ")) // skip the first match, which is "FROM"
 	}
 	return tables
 }
 
-func (l *LogicImpl) buildColumnDefMap(tables []data_access.Table) map[string][]ColumnDef {
-	mappedDefs := make(map[string][]ColumnDef, len(tables))
+func (l *LogicImpl) buildColumnDefMap(tables []TableDef) {
 
-	for _, table := range tables {
-		columnDefs := make([]ColumnDef, len(table.Columns))
-		for j, col := range table.Columns {
+	for i, table := range tables {
+		columnDefs := make([]ColumnDef, len(table.Table.Columns))
+		for j, col := range table.Table.Columns {
 			def := ColumnDef{
-				Column: table.Columns[j],
+				Column: table.Table.Columns[j],
 				Kind:   pgTypeToPrimitive[col.DataType],
 			}
 			columnDefs[j] = def
 		}
-		mappedDefs[table.Name] = columnDefs
+		tables[i].ColumnDefs = columnDefs
 	}
-
-	return mappedDefs
 }
 
-func (l *LogicImpl) buildStructStringFromTemplate(definitions map[string][]ColumnDef) ([]byte, error) {
+func (l *LogicImpl) buildStructStringFromTemplate(definitions []TableDef) ([]byte, error) {
 	tmpl, err := template.ParseFS(content, "templates/struct.tmpl")
 	if err != nil {
 		return nil, err
@@ -139,6 +151,26 @@ func (l *LogicImpl) buildStructStringFromTemplate(definitions map[string][]Colum
 		return nil, err
 	}
 	return buff.Bytes(), nil
+}
+
+func findAlias(tableName string) string {
+	var alias string
+	aliasMatch := regexp.MustCompile(findAliasRegEx).FindAllStringSubmatch(tableName, -1)
+	// if there is a match, getting the last entry of the inner array gives you the alias
+	if len(aliasMatch) != 0 {
+		alias = aliasMatch[len(aliasMatch)-1][len(aliasMatch[0])-1]
+
+	}
+	return alias
+}
+
+func findAliasedTableName(tableName string) string {
+	tableNameMatch := regexp.MustCompile(findAliasedTableNameRegEx).FindAllStringSubmatch(tableName, -1)
+	if len(tableNameMatch) != 0 {
+		return strings.TrimSuffix(tableNameMatch[0][len(tableNameMatch[0])-1], " ")
+	}
+
+	return ""
 }
 
 func (l *LogicImpl) WriteStructsToDir(dir string, structBytes []byte) error {

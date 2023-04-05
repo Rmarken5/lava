@@ -1,6 +1,6 @@
-{{range $table, $cols := .}}
-    type {{$table}} struct {
-        {{- range $_, $col := $cols}}
+{{range $_, $table := .}}
+    type {{$table.TableName}} struct {
+        {{- range $_, $col := $table.ColumnDefs}}
             {{$col.VariableName}}  {{$col.Kind}} `db:"{{$col.Column.Name}}"`
         {{- end}}
     }

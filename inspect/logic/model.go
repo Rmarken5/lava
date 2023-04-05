@@ -6,11 +6,25 @@ import (
 )
 
 type (
+	TableDef struct {
+		Table      data_access.Table
+		Alias      string
+		ColumnDefs []ColumnDef
+	}
 	ColumnDef struct {
 		Column data_access.Column
 		Kind   string
 	}
 )
+
+func (t TableDef) TableName() string {
+	parts := strings.Split(t.Table.Name, "_")
+	variable := ""
+	for _, part := range parts {
+		variable += strings.ToUpper(part[:1]) + part[1:]
+	}
+	return variable
+}
 
 func (c ColumnDef) VariableName() string {
 	parts := strings.Split(c.Column.Name, "_")
