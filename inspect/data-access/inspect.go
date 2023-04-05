@@ -32,7 +32,7 @@ func (i *InspectorImpl) InspectTable(name string) (Table, error) {
 	}
 
 	i.logger.Printf("introspecting columns on table %s\n", name)
-	rows, err := i.db.Query(fmt.Sprintf("SELECT column_name, data_type FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '%s'", strings.ToLower(name)))
+	rows, err := i.db.Query(fmt.Sprintf("SELECT column_name, data_type FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '%s' order by ordinal_position", strings.ToLower(name)))
 	if err != nil {
 		i.logger.Println(err)
 		return table, err

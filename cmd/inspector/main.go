@@ -28,7 +28,7 @@ func main() {
 
 	logic := logic.New(log.New(NewStdoutWriter(), "logic: ", 0), inspector)
 
-	str, err := logic.BuildStructsForQuery(`select * from team;`)
+	str, err := logic.BuildStructsForQuery(`select t.* from team as t;`)
 	if err != nil {
 		fmt.Printf("Error opening database: %v\n", err)
 	}
