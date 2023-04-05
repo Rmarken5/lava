@@ -40,6 +40,7 @@ func (i *InspectorImpl) InspectTable(name string) (Table, error) {
 	for rows.Next() {
 		var col Column
 		err := rows.Scan(&col.Name, &col.DataType)
+		col.DataType = strings.Fields(col.DataType)[0]
 		if err != nil {
 			return table, err
 		}
