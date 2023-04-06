@@ -28,14 +28,7 @@ func main() {
 
 	logic := logic.New(log.New(NewStdoutWriter(), "logic: ", 0), inspector)
 
-	str, err := logic.BuildStructsForQuery(`select g.id as "game.id",
-       g.home_team_id as "game.home_team_id",
-       g.away_team_id as "game.away_team_id",
-       g.game_date_time as "game.game_date_time",
-       g.season as "game.season",
-       g.created_at as "game.created_at",
-       g.updated_at as "game.updated_at",
-       g.deleted_at as "game.deleted_at",
+	str, err := logic.BuildStructsForQuery(`select g.*,
        gds.id as "defense.id",
        gds.team_id as "defense.team_id",
        gds.game_id as "defense.game_id",

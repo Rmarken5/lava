@@ -3,6 +3,7 @@ package logic
 import (
 	"bytes"
 	"embed"
+	"fmt"
 	"github.com/rmarken5/lava/inspect/data-access"
 	"log"
 	"reflect"
@@ -46,8 +47,10 @@ var (
 
 const (
 	tablesInQueryRegEx        = `(?im)(?:FROM|JOIN)\s+([^\s,;()]+)(?:\s+AS\s+([^\s,;()]+))?`
-	findAliasRegEx            = `(?im)\sAS|\s(\w+)`
+	findTableAliasRegEx       = `(?im)\sAS|\s(\w+)`
+	findColumnAliasRegEx      = `(?im)AS\s(\S+)`
 	findAliasedTableNameRegEx = `(?im)(\w+)\sAS\s`
+	allColumnsInQueryRegEx    = `(?im)(?:select\s|\s+)(.*?)(?:\s*(?:,|from))`
 )
 
 type (
@@ -71,11 +74,15 @@ func New(logger *log.Logger, dataAccess data_access.Inspector) *LogicImpl {
 
 func (l *LogicImpl) BuildStructsForQuery(query string) (string, error) {
 
+	rawColumnStrings := getColumnsInSelectClause(query)
+	fmt.Println(rawColumnStrings)
+	columnsMappedToTableAliases := tableColumnAliasMap(rawColumnStrings)
+	fmt.Println(columnsMappedToTableAliases)
 	tableDefinitions, err := l.getAllTableDefinitionsFromQuery(query)
 	if err != nil {
 		return "", err
 	}
-	l.buildColumnDefMap(tableDefinitions)
+	l.buildColumnDefMap(tableDefinitions, columnsMappedToTableAliases)
 	structBytes, err := l.buildStructStringFromTemplate(tableDefinitions)
 	if err != nil {
 		return "", err
@@ -90,7 +97,7 @@ func (l *LogicImpl) getAllTableDefinitionsFromQuery(query string) ([]TableDef, e
 	tableDefinitions := make([]TableDef, len(tableNames))
 	for i, table := range tableNames {
 		var tableName = table
-		alias := findAlias(table)
+		alias := findTableAlias(table)
 		if alias != "" {
 			tableName = findAliasedTableName(table)
 		}
@@ -100,9 +107,8 @@ func (l *LogicImpl) getAllTableDefinitionsFromQuery(query string) ([]TableDef, e
 			return tableDefinitions, err
 		}
 		tableDefinitions[i] = TableDef{
-			Table:      definition,
-			Alias:      alias,
-			ColumnDefs: nil,
+			Table: definition,
+			Alias: alias,
 		}
 	}
 
@@ -124,18 +130,51 @@ func (l *LogicImpl) getTablesFromQuery(query string) []string {
 	return tables
 }
 
-func (l *LogicImpl) buildColumnDefMap(tables []TableDef) {
+//func (l *LogicImpl) buildColumnDefMap(tables []TableDef) {
+//	for i, table := range tables {
+//		columnDefs := make([]ColumnDef, len(table.Table.Columns))
+//		for j, col := range table.Table.Columns {
+//			alias := findTableAlias(col.Name)
+//			def := ColumnDef{
+//				Column: table.Table.Columns[j],
+//				Kind:   pgTypeToPrimitive[col.DataType],
+//				Alias:  alias,
+//			}
+//			columnDefs[j] = def
+//		}
+//		tables[i].ColumnDefs = columnDefs
+//	}
+//}
 
+func (l *LogicImpl) buildColumnDefMap(tables []TableDef, columnsFromSelect map[string][]string) {
 	for i, table := range tables {
-		columnDefs := make([]ColumnDef, len(table.Table.Columns))
-		for j, col := range table.Table.Columns {
-			def := ColumnDef{
-				Column: table.Table.Columns[j],
-				Kind:   pgTypeToPrimitive[col.DataType],
+		if columnsFromSelect[table.Alias][0] == "*" {
+			columnDefs := make([]ColumnDef, len(table.Table.Columns))
+			for j, col := range table.Table.Columns {
+				alias := findTableAlias(col.Name)
+				def := ColumnDef{
+					Column: table.Table.Columns[j],
+					Kind:   pgTypeToPrimitive[col.DataType],
+					Alias:  alias,
+				}
+				columnDefs[j] = def
 			}
-			columnDefs[j] = def
+			tables[i].ColumnDefs = columnDefs
+		} else {
+			columnDefs := make([]ColumnDef, len(columnsFromSelect[table.Alias]))
+			for j, cols := range columnsFromSelect[table.Alias] {
+				alias := findColumnAlias(cols)
+				colName := findAliasedTableName(cols)
+				matchedCol := table.Table.Columns.FindFirst(colName)
+				def := ColumnDef{
+					Column: *matchedCol,
+					Kind:   pgTypeToPrimitive[matchedCol.DataType],
+					Alias:  alias,
+				}
+				columnDefs[j] = def
+			}
+			tables[i].ColumnDefs = columnDefs
 		}
-		tables[i].ColumnDefs = columnDefs
 	}
 }
 
@@ -153,17 +192,18 @@ func (l *LogicImpl) buildStructStringFromTemplate(definitions []TableDef) ([]byt
 	return buff.Bytes(), nil
 }
 
-func findAlias(tableName string) string {
+// findTableAlias finds the table's alias (if it has one).
+func findTableAlias(tableName string) string {
 	var alias string
-	aliasMatch := regexp.MustCompile(findAliasRegEx).FindAllStringSubmatch(tableName, -1)
+	aliasMatch := regexp.MustCompile(findTableAliasRegEx).FindAllStringSubmatch(tableName, -1)
 	// if there is a match, getting the last entry of the inner array gives you the alias
 	if len(aliasMatch) != 0 {
 		alias = aliasMatch[len(aliasMatch)-1][len(aliasMatch[0])-1]
-
 	}
 	return alias
 }
 
+// findAliasedTableName finds the table name which contains an alias
 func findAliasedTableName(tableName string) string {
 	tableNameMatch := regexp.MustCompile(findAliasedTableNameRegEx).FindAllStringSubmatch(tableName, -1)
 	if len(tableNameMatch) != 0 {
@@ -171,6 +211,42 @@ func findAliasedTableName(tableName string) string {
 	}
 
 	return ""
+} // findColumnAlias finds the alias of a column
+func findColumnAlias(columnName string) string {
+	columnNameMatch := regexp.MustCompile(findColumnAliasRegEx).FindAllStringSubmatch(columnName, -1)
+	if len(columnNameMatch) != 0 {
+		return strings.TrimSuffix(columnNameMatch[0][len(columnNameMatch[0])-1], " ")
+	}
+
+	return ""
+}
+
+func getColumnsInSelectClause(query string) []string {
+	var cols []string
+	re := regexp.MustCompile(allColumnsInQueryRegEx)
+	match := re.FindAllStringSubmatch(query, -1)
+	if match != nil {
+		for _, m := range match {
+			cols = append(cols, m[1:]...)
+		}
+	}
+	return cols
+}
+
+func tableColumnAliasMap(columnStrings []string) map[string][]string {
+	colMap := make(map[string][]string)
+	for _, col := range columnStrings {
+		idx := strings.Index(col, ".")
+		tableAlias := col[:idx]
+		columnName := col[idx+1:]
+		columnName = strings.ReplaceAll(columnName, "\"", "")
+		if _, ok := colMap[tableAlias]; !ok {
+			colMap[tableAlias] = []string{columnName}
+		} else {
+			colMap[tableAlias] = append(colMap[tableAlias], columnName)
+		}
+	}
+	return colMap
 }
 
 func (l *LogicImpl) WriteStructsToDir(dir string, structBytes []byte) error {

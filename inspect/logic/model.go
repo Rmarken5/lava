@@ -13,6 +13,7 @@ type (
 	}
 	ColumnDef struct {
 		Column data_access.Column
+		Alias  string
 		Kind   string
 	}
 )
@@ -34,3 +35,10 @@ func (c ColumnDef) VariableName() string {
 	}
 	return variable
 }
+
+//func (c ColumnDef) TagName() string {
+//	if c.Alias != "" {
+//		return c.Alias
+//	}
+//	return c.Column.Name
+//}
