@@ -7,9 +7,10 @@ import (
 
 type (
 	TableDef struct {
-		Table      data_access.Table
-		Alias      string
-		ColumnDefs []ColumnDef
+		Table                  data_access.Table
+		Alias                  string
+		EmbeddedStructTagValue string
+		ColumnDefs             []ColumnDef
 	}
 	ColumnDef struct {
 		Column data_access.Column

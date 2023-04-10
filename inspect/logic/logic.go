@@ -95,9 +95,20 @@ func (l *LogicImpl) BuildStructsForQuery(query string) (string, error) {
 
 func getEmbeddedStructTagsFromColumns(tables []TableDef) map[string]string {
 	tagMapping := make(map[string]string)
-	for _, table := range tables {
-		column := table.ColumnDefs[0]
-		fmt.Println(column)
+	for i := 0; i < len(tables); i++ {
+		table := &tables[i]
+		table.EmbeddedStructTagValue = table.Table.Name
+		if table.Alias != "" {
+			table.EmbeddedStructTagValue = table.Alias
+		}
+		for _, columnDef := range table.ColumnDefs {
+			if strings.Contains(columnDef.Alias, ".") {
+				tableAlias := columnDef.Alias[:strings.Index(columnDef.Alias, ".")]
+				table.EmbeddedStructTagValue = tableAlias
+				break
+			}
+		}
+
 	}
 
 	return tagMapping
