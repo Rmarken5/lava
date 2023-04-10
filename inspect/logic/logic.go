@@ -83,6 +83,7 @@ func (l *LogicImpl) BuildStructsForQuery(query string) (string, error) {
 		return "", err
 	}
 	l.buildColumnDefMap(tableDefinitions, columnsMappedToTableAliases)
+	getEmbeddedStructTagsFromColumns(tableDefinitions)
 	structBytes, err := l.buildStructStringFromTemplate(tableDefinitions)
 	if err != nil {
 		return "", err
@@ -90,6 +91,16 @@ func (l *LogicImpl) BuildStructsForQuery(query string) (string, error) {
 
 	return string(structBytes), err
 
+}
+
+func getEmbeddedStructTagsFromColumns(tables []TableDef) map[string]string {
+	tagMapping := make(map[string]string)
+	for _, table := range tables {
+		column := table.ColumnDefs[0]
+		fmt.Println(column)
+	}
+
+	return tagMapping
 }
 
 func (l *LogicImpl) getAllTableDefinitionsFromQuery(query string) ([]TableDef, error) {
@@ -147,35 +158,46 @@ func (l *LogicImpl) getTablesFromQuery(query string) []string {
 //}
 
 func (l *LogicImpl) buildColumnDefMap(tables []TableDef, columnsFromSelect map[string][]string) {
-	for i, table := range tables {
-		if columnsFromSelect[table.Alias][0] == "*" {
-			columnDefs := make([]ColumnDef, len(table.Table.Columns))
-			for j, col := range table.Table.Columns {
-				alias := findTableAlias(col.Name)
-				def := ColumnDef{
-					Column: table.Table.Columns[j],
-					Kind:   pgTypeToPrimitive[col.DataType],
-					Alias:  alias,
-				}
-				columnDefs[j] = def
-			}
-			tables[i].ColumnDefs = columnDefs
+	for i := 0; i < len(tables); i++ {
+
+		columnsFromAlias := columnsFromSelect[tables[i].Alias]
+		if columnsFromAlias[0] == "*" {
+			columnDefsForAllColumns(&tables[i])
 		} else {
-			columnDefs := make([]ColumnDef, len(columnsFromSelect[table.Alias]))
-			for j, cols := range columnsFromSelect[table.Alias] {
-				alias := findColumnAlias(cols)
-				colName := findAliasedTableName(cols)
-				matchedCol := table.Table.Columns.FindFirst(colName)
-				def := ColumnDef{
-					Column: *matchedCol,
-					Kind:   pgTypeToPrimitive[matchedCol.DataType],
-					Alias:  alias,
-				}
-				columnDefs[j] = def
-			}
-			tables[i].ColumnDefs = columnDefs
+			columnDefsForAliases(&tables[i], columnsFromAlias)
 		}
 	}
+}
+
+func columnDefsForAliases(table *TableDef, columnsFromAlias []string) {
+
+	columnDefs := make([]ColumnDef, len(columnsFromAlias))
+	for j, cols := range columnsFromAlias {
+		alias := findColumnAlias(cols)
+		colName := findAliasedTableName(cols)
+		matchedCol := table.Table.Columns.FindFirst(colName)
+		def := ColumnDef{
+			Column: *matchedCol,
+			Kind:   pgTypeToPrimitive[matchedCol.DataType],
+			Alias:  alias,
+		}
+		columnDefs[j] = def
+	}
+	table.ColumnDefs = columnDefs
+}
+
+func columnDefsForAllColumns(table *TableDef) {
+	columnDefs := make([]ColumnDef, len(table.Table.Columns))
+	for j, col := range table.Table.Columns {
+		alias := findTableAlias(col.Name)
+		def := ColumnDef{
+			Column: table.Table.Columns[j],
+			Kind:   pgTypeToPrimitive[col.DataType],
+			Alias:  alias,
+		}
+		columnDefs[j] = def
+	}
+	table.ColumnDefs = columnDefs
 }
 
 func (l *LogicImpl) buildStructStringFromTemplate(definitions []TableDef) ([]byte, error) {
