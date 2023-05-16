@@ -12,31 +12,38 @@ var fs embed.FS
 
 type (
 	Strukt struct {
-		name       string
-		properties []*property.Property
+		Name            string
+		Properties      []property.BuildProperty
+		PropertyPrinter propertyPrinter
 	}
 	StruktBuilder struct {
 		struktModifiers []struktModifier
 	}
 	struktModifier func(strukt *Strukt)
 	struktBuild    func(b *StruktBuilder) *Strukt
-)
 
-func (b *StruktBuilder) AddPropBuilder(fn func(pb *property.PropertyBuilder) *property.Property) *StruktBuilder {
-	builder := &property.PropertyBuilder{}
-	b.struktModifiers = append(b.struktModifiers, func(strukt *Strukt) {
-		strukt.properties = append(strukt.properties, fn(builder))
-	})
-	return b
-}
+	propertyPrinter func(b property.BuildProperty) ([]byte, error)
+)
 
 func (b *StruktBuilder) Named(name string) *StruktBuilder {
 	b.struktModifiers = append(b.struktModifiers, func(strukt *Strukt) {
-		strukt.name = name
+		strukt.Name = name
 	})
 	return b
 }
 
+func (b *StruktBuilder) AddProperty(fn property.BuildProperty) *StruktBuilder {
+	b.struktModifiers = append(b.struktModifiers, func(strukt *Strukt) {
+		strukt.Properties = append(strukt.Properties, fn)
+	})
+	return b
+}
+func (b *StruktBuilder) AddPropertyPrinter(fn propertyPrinter) *StruktBuilder {
+	b.struktModifiers = append(b.struktModifiers, func(strukt *Strukt) {
+		strukt.PropertyPrinter = fn
+	})
+	return b
+}
 func (b *StruktBuilder) Build() *Strukt {
 	strukt := &Strukt{}
 	for _, mod := range b.struktModifiers {

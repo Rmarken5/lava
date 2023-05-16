@@ -8,7 +8,7 @@ import (
 func TestPrintProperties(t *testing.T) {
 	tests := []struct {
 		name     string
-		builder  build
+		builder  BuildProperty
 		expected string
 	}{
 		{

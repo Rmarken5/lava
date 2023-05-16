@@ -15,7 +15,7 @@ type (
 	}
 	modifier func(p *Property)
 
-	build func(b *PropertyBuilder) *Property
+	BuildProperty func(b *PropertyBuilder) *Property
 )
 
 func (b *PropertyBuilder) Named(name string) *PropertyBuilder {
@@ -47,7 +47,7 @@ func (b *PropertyBuilder) Build() *Property {
 	return &property
 }
 
-func PrintProperties(b build) ([]byte, error) {
+func PrintProperties(b BuildProperty) ([]byte, error) {
 	builder := &PropertyBuilder{}
 	prop := b(builder)
 	return printProperties(prop)

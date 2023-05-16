@@ -15,10 +15,20 @@ func main() {
 	}
 	fmt.Printf("%s%s\n", properties, properties)
 
+	sBuilder := strukt.StruktBuilder{}
+	s := sBuilder.Named("MyStruct").AddPropertyPrinter(property.PrintProperties).AddProperty(func(b *property.PropertyBuilder) *property.Property {
+		return b.Named("ID").OfType("string").Tagged("id").Build()
+	}).Build()
+
+	printer, _ := s.PropertyPrinter(s.Properties[0])
+
+	fmt.Println(string(printer))
+
 	printStrukt, err := strukt.PrintStrukt(func(b *strukt.StruktBuilder) *strukt.Strukt {
-		return b.Named("MyStruct").AddPropBuilder(func(pb *property.PropertyBuilder) *property.Property {
-			return pb.Named("ID").OfType("uuid.UUID").Tagged("id").Build()
+		s := b.Named("MyStruct").AddPropertyPrinter(property.PrintProperties).AddProperty(func(b *property.PropertyBuilder) *property.Property {
+			return b.Named("ID").OfType("string").Tagged("id").Build()
 		}).Build()
+		return s
 	})
 	if err != nil {
 		fmt.Println(err.Error())

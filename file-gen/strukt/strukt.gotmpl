@@ -1,5 +1,5 @@
-type .name struct {
-{{- range $p := .properties}}
-    {{PrintProperties($p)}}
+type {{.Name}} struct {
+{{- range $i, $p := .Properties }}
+    {{ printf "%s" ( call $.PropertyPrinter $p)}}
 {{- end}}
 }
