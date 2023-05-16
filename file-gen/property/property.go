@@ -1,13 +1,9 @@
 package property
 
 import (
-	"bytes"
-	"embed"
-	"html/template"
+	"fmt"
+	"strings"
 )
-
-//go:embed property.tmpl
-var tmpl embed.FS
 
 type (
 	Property struct {
@@ -58,15 +54,7 @@ func PrintProperties(b build) ([]byte, error) {
 }
 
 func printProperties(prop *Property) ([]byte, error) {
-	fs, err := template.ParseFS(tmpl, "property.tmpl")
-	if err != nil {
-		return nil, err
-	}
-	buff := bytes.NewBuffer(nil)
+	str := fmt.Sprintf("%s %s %s", prop.Name, prop.DataType, prop.Tag)
 
-	err = fs.Execute(buff, prop)
-	if err != nil {
-		return nil, err
-	}
-	return buff.Bytes(), nil
+	return []byte(strings.TrimSpace(str)), nil
 }

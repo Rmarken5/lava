@@ -1,0 +1,5 @@
+type .name struct {
+{{- range $p := .properties}}
+    {{PrintProperties($p)}}
+{{- end}}
+}
