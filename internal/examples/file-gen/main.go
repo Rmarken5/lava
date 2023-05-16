@@ -16,16 +16,16 @@ func main() {
 	fmt.Printf("%s%s\n", properties, properties)
 
 	sBuilder := strukt.StruktBuilder{}
-	s := sBuilder.Named("MyStruct").AddPropertyPrinter(property.PrintProperties).AddProperty(func(b *property.PropertyBuilder) *property.Property {
+	s := sBuilder.Named("MyStruct").AddPropertyPrinter(property.PrintProperties).AddPropertyBuilder(func(b *property.PropertyBuilder) *property.Property {
 		return b.Named("ID").OfType("string").Tagged("id").Build()
 	}).Build()
 
-	printer, _ := s.PropertyPrinter(s.Properties[0])
+	printer, _ := s.PropertyPrinter(s.PropertyBuilders[0])
 
 	fmt.Println(string(printer))
 
 	printStrukt, err := strukt.PrintStrukt(func(b *strukt.StruktBuilder) *strukt.Strukt {
-		s := b.Named("MyStruct").AddPropertyPrinter(property.PrintProperties).AddProperty(func(b *property.PropertyBuilder) *property.Property {
+		s := b.Named("MyStruct").AddPropertyPrinter(property.PrintProperties).AddPropertyBuilder(func(b *property.PropertyBuilder) *property.Property {
 			return b.Named("ID").OfType("string").Tagged("id").Build()
 		}).Build()
 		return s

@@ -12,9 +12,9 @@ var fs embed.FS
 
 type (
 	Strukt struct {
-		Name            string
-		Properties      []property.BuildProperty
-		PropertyPrinter propertyPrinter
+		Name             string
+		PropertyBuilders []property.BuildProperty
+		PropertyPrinter  propertyPrinter
 	}
 	StruktBuilder struct {
 		struktModifiers []struktModifier
@@ -32,9 +32,9 @@ func (b *StruktBuilder) Named(name string) *StruktBuilder {
 	return b
 }
 
-func (b *StruktBuilder) AddProperty(fn property.BuildProperty) *StruktBuilder {
+func (b *StruktBuilder) AddPropertyBuilder(fn property.BuildProperty) *StruktBuilder {
 	b.struktModifiers = append(b.struktModifiers, func(strukt *Strukt) {
-		strukt.Properties = append(strukt.Properties, fn)
+		strukt.PropertyBuilders = append(strukt.PropertyBuilders, fn)
 	})
 	return b
 }
