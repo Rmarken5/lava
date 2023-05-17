@@ -1,9 +1,9 @@
 package {{.Pkg}}
 
-{{ if len .Imports gt 0}}
+{{if gt (len .Imports) 0}}
 imports (
     {{- range $_, $im := .Imports}}
-    {{$im}}
+    "{{$im}}"
     {{- end}}
 )
 {{end}}
