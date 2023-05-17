@@ -37,4 +37,42 @@ func main() {
 
 	fmt.Println(string(printStrukt))
 
+	//fileBytes, err := file.PrintFile(func(fb *file.FileBuilder) *file.File {
+	//	return fb.WithPackage("github.com/rmarken/lava/db/models").
+	//		WithImports([]string{"fmt", "github.com/rmarken/lava/file-gen/file", "time.Time"}).
+	//		WithStruktPrinter(strukt.PrintStrukt).
+	//		WithStruktBuilder(func(b *strukt.StruktBuilder) *strukt.Strukt {
+	//			return b.Named("MyFirst").
+	//				AddPropertyPrinter(property.PrintProperties).
+	//				AddPropertyBuilder(func(b *property.PropertyBuilder) *property.Property {
+	//					return b.Named("File").
+	//						OfType("file.File").
+	//						Tagged("file").
+	//						Build()
+	//				}).
+	//				AddPropertyBuilder(func(b *property.PropertyBuilder) *property.Property {
+	//					return b.Named("Created_At").
+	//						OfType("time.Time").
+	//						Tagged("createdAt").
+	//						Build()
+	//				}).Build()
+	//		}).WithStruktBuilder(func(b *strukt.StruktBuilder) *strukt.Strukt {
+	//		return b.Named("MySecond").
+	//			AddPropertyPrinter(property.PrintProperties).
+	//			AddPropertyBuilder(func(b *property.PropertyBuilder) *property.Property {
+	//				return b.Named("Eh").
+	//					OfType("file.File").
+	//					Tagged("file").
+	//					Build()
+	//			}).
+	//			AddPropertyBuilder(func(b *property.PropertyBuilder) *property.Property {
+	//				return b.Named("Created_At").
+	//					OfType("time.Time").
+	//					Tagged("createdAt").
+	//					Build()
+	//			}).Build()
+	//	}).Build()
+	//})
+	//
+	//fmt.Println(string(fileBytes))
 }

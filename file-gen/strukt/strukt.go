@@ -20,7 +20,7 @@ type (
 		struktModifiers []struktModifier
 	}
 	struktModifier func(strukt *Strukt)
-	struktBuild    func(b *StruktBuilder) *Strukt
+	BuildStrukt    func(b *StruktBuilder) *Strukt
 
 	propertyPrinter func(b property.BuildProperty) ([]byte, error)
 )
@@ -52,7 +52,7 @@ func (b *StruktBuilder) Build() *Strukt {
 	return strukt
 }
 
-func PrintStrukt(b struktBuild) ([]byte, error) {
+func PrintStrukt(b BuildStrukt) ([]byte, error) {
 	builder := &StruktBuilder{}
 	strukt := b(builder)
 	return printStrukt(strukt)
