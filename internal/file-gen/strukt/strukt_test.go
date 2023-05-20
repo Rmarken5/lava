@@ -1,7 +1,7 @@
 package strukt
 
 import (
-	"github.com/rmarken5/lava/file-gen/property"
+	"github.com/rmarken5/lava/internal/file-gen/property"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

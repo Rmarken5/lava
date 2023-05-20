@@ -3,7 +3,7 @@ package strukt
 import (
 	"bytes"
 	"embed"
-	"github.com/rmarken5/lava/file-gen/property"
+	"github.com/rmarken5/lava/internal/file-gen/property"
 	"text/template"
 )
 

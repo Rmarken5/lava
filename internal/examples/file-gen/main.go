@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/rmarken5/lava/file-gen/file"
-	"github.com/rmarken5/lava/file-gen/property"
-	"github.com/rmarken5/lava/file-gen/strukt"
+	"github.com/rmarken5/lava/internal/file-gen/file"
+	"github.com/rmarken5/lava/internal/file-gen/property"
+	"github.com/rmarken5/lava/internal/file-gen/strukt"
 )
 
 func main() {

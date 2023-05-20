@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
-	"github.com/rmarken5/lava/file-gen/strukt"
+	"github.com/rmarken5/lava/internal/file-gen/strukt"
 	"text/template"
 )
 
